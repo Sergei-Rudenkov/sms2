@@ -56,7 +56,7 @@ func WithoutReset() Option {
 	}
 }
 
-func Singltone () (cache *Cache) {
+func Singleton() (cache *Cache) {
 	if singleton != nil {
 		return &singleton
 	}

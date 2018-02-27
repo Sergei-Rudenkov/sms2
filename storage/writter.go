@@ -22,7 +22,7 @@ func Keys () (r dto.Responder) {
 }
 
 func Capacity() (dto.Responder) {
-	cache := *Singltone()
+	cache := *Singleton()
 	val := cache.Cap()
 	return &dto.CapacityResponse{
 		Val: val,

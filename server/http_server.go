@@ -6,20 +6,30 @@ import (
 	"errors"
 	"fmt"
 	"sms2/storage/dto"
+	_ "github.com/google/uuid"
+	"math/rand"
 )
+
+var responseChan chan dto.Responder
+
+func Start() {
+	responseChan = make(chan dto.Responder)
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
+}
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	cr := request2CacheRequest(r)
-	responseChan := make(chan dto.Responder)
-
+	cr.TransactionID = string(rand.Int())
 	go func() {
 		responder := processReq(cr)
 		responseChan <- responder
 	}()
+	fmt.Fprintf(w, "Hello!!!")
 
 	go func() {
 		for r := range responseChan {
-			if (r.GetTransactionId() == cr.TransactionID) {
+			if r.GetTransactionId() == cr.TransactionID {
 				switch r.(type) {
 				//case dto.KeysResponse:
 				//case dto.GetResponse:
@@ -29,7 +39,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 					if i, ok := r.Read().(int); ok {
 						fmt.Fprintf(w, fmt.Sprintf("{'capasity': %d, 'err': %s}", i, r.GetError()))
 					}
-
+				case *dto.EmptyResponse:
+					fmt.Fprintf(w, fmt.Sprintf("{'err': '%s'}"), r.GetError().Error())
 				}
 			}
 		}
@@ -49,14 +60,12 @@ func processReq(cr *dto.CacheRequest) (r dto.Responder) {
 	case "capacity":
 		r = storage.Capacity()
 	default:
-		r.SetError(errors.New("Unknown opperation"))
+		r = &dto.EmptyResponse{
+			Err: errors.New("Unknown opperation"),
+			TransactionID: cr.TransactionID,
+		}
 	}
 	return r
-}
-
-func Start() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
 }
 
 func request2CacheRequest(r *http.Request) *dto.CacheRequest {
