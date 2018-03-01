@@ -14,7 +14,10 @@ type entry struct {
 	timer   *time.Timer
 }
 
-var singleton Cache
+var (
+	singleton Cache
+	once      sync.Once
+)
 
 type Cache interface {
 	// Set a key with value to the cache. Returns true if an item was
@@ -56,13 +59,11 @@ func WithoutReset() Option {
 	}
 }
 
-func Singleton() (cache *Cache) {
-	if singleton != nil {
-		return &singleton
-	}
-	//default
-	c := New(10000, WithTTL(10000 * 100))
-	return &c
+func Singleton() Cache {
+	once.Do(func() {
+		singleton = New(10000, WithTTL(10000*100))
+	})
+	return singleton
 }
 
 // cache is the type that implements the ttlru

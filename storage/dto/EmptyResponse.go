@@ -1,5 +1,6 @@
 package dto
 
+
 type EmptyResponse struct {
 	Err error
 	TransactionID string
@@ -14,9 +15,5 @@ func (r *EmptyResponse) SetError(err error)  {
 }
 
 func (r *EmptyResponse) Read() interface{}  {
-	return r.Err
-}
-
-func (r *EmptyResponse) GetTransactionId() string  {
-	return r.TransactionID
+	return ""
 }
