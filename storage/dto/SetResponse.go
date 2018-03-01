@@ -1,7 +1,7 @@
 package dto
 
 type SetResponse struct {
-	Success       bool
+	Evicted       bool
 	err           error
 	TransactionID string
 }

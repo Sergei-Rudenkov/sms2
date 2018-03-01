@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"sync"
 	"time"
+	_"fmt"
 )
 
 type entry struct {
@@ -61,7 +62,7 @@ func WithoutReset() Option {
 
 func Singleton() Cache {
 	once.Do(func() {
-		singleton = New(10000, WithTTL(10000*100))
+		singleton = New(10,  WithTTL(5 * time.Minute))
 	})
 	return singleton
 }
@@ -118,6 +119,7 @@ func (c *cache) Set(key, value interface{}) bool {
 	}
 
 	c.insertEntry(key, value)
+
 
 	return evict
 }

@@ -1,7 +1,9 @@
 package dto
 
+import "strings"
+
 type KeysResponse struct{
-	List interface{}
+	List []interface{}
 	Success bool
 	err error
 	TransactionID string
@@ -16,5 +18,9 @@ func (r *KeysResponse) SetError(err error) {
 }
 
 func (r *KeysResponse) Read() interface{} {
-	return r.List
+	stringList := make([]string, len(r.List))
+	for i := range r.List {
+		stringList[i] = r.List[i].(string)
+	}
+	return "{" + strings.Join(stringList,",") + "}"
 }

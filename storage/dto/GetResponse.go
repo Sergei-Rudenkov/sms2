@@ -5,7 +5,7 @@ import "fmt"
 type GetResponse struct {
 	Value         interface{}
 	err           error
-	Success		  bool
+	Success       bool
 	TransactionID string
 }
 
@@ -18,5 +18,13 @@ func (r *GetResponse) SetError(err error) {
 }
 
 func (r *GetResponse) Read() interface{} {
-	return fmt.Sprintf("{'value': '%s', 'type': '%s', 'err', '%s'}", r.Value, r.err.Error())
+	if (r.Value != nil && r.err != nil) {
+		return fmt.Sprintf("{'value': '%s', 'err', '%s'}", r.Value.(string), r.err.Error())
+	} else if(r.err == nil && r.Value != nil){
+		return fmt.Sprintf("{'value': '%s'}", r.Value.(string))
+	} else if(r.Value == nil && r.err != nil){
+		return fmt.Sprintf("{'err': '%s'}", r.err.Error())
+	}
+	return "{'value': nil}"
 }
+

@@ -30,7 +30,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	case *dto.RemoveResponse:
 		fmt.Fprintf(w, fmt.Sprintf("{'succ': %s}", strconv.FormatBool(responder.(*dto.RemoveResponse).Success)))
 	case *dto.SetResponse:
-		fmt.Fprintf(w, fmt.Sprintf("{'succ': %s}", strconv.FormatBool(responder.(*dto.SetResponse).Success)))
+		fmt.Fprintf(w, fmt.Sprintf("{'succ': %s}", strconv.FormatBool(responder.(*dto.SetResponse).Evicted)))
 	case *dto.CapacityResponse:
 		if i, ok := responder.Read().(int); ok {
 			fmt.Fprintf(w, fmt.Sprintf("{'capasity': %d, 'err': %s}", i, responder.GetError()))

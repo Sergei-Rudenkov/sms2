@@ -2,14 +2,16 @@ package storage
 
 import (
 	"sms2/storage/dto"
+	"fmt"
 )
 var(
 	c = Singleton()
 )
 func Set (cr *dto.CacheRequest) (r dto.Responder)  {
-	succ := c.Set(cr.Key, cr.Value)
+	updated := c.Set(cr.Key, cr.Value)
+	//fmt.Println(c.Keys())
 	return &dto.SetResponse{
-		Success: succ,
+		Evicted: updated,
 	}
 }
 
