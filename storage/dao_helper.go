@@ -2,7 +2,6 @@ package storage
 
 import (
 	"sms2/storage/dto"
-	"fmt"
 )
 var(
 	c = Singleton()

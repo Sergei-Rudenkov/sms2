@@ -247,3 +247,7 @@ func (c *cache) Del(key interface{}) bool {
 
 	return false
 }
+
+func GetCacheProviderType() string{
+	return `rigid`
+}

@@ -6,14 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"sms2/storage/dto"
-	_ "github.com/google/uuid"
 	"math/rand"
 	"strconv"
 )
 
 var responseChan chan dto.Responder
 
-func Start() {
+func ServeHttp() {
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":8080", nil)
 }
