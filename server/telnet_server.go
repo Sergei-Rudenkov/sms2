@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func ServeTelnetConnection() {
@@ -57,7 +58,7 @@ func ServeTelnetConnection() {
 
 func keysProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`keys` command received")
-	keys := storage.Singleton().Keys()
+	keys := storage.GetCache().Keys()
 	stringList := make([]string, len(keys))
 	for i := range keys {
 		stringList[i] = keys[i].(string)
@@ -72,7 +73,8 @@ func keysProducer(ctx telnet.Context, name string, args ...string) telsh.Handler
 func setProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`set` command received","args:", args)
 	argMap, err := argumentParser(name, args...)
-	evicted := storage.Singleton().Set(argMap[`key`], argMap[`value`])
+	tis, _ := strconv.Atoi(argMap[`ttl`]) // error should already have been checked in argumentParser function
+	evicted := storage.GetCache().Set(argMap[`key`], argMap[`value`],  time.Duration(tis)* time.Second)
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
 		if err != nil{
@@ -87,7 +89,7 @@ func setProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 
 func capacityProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`capacity` command received","args:", args)
-	capacity := storage.Singleton().Cap()
+	capacity := storage.GetCache().Cap()
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
 		oi.LongWriteString(stdout, strconv.Itoa(capacity))
@@ -98,7 +100,7 @@ func capacityProducer(ctx telnet.Context, name string, args ...string) telsh.Han
 func getProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`get` command received","args:", args)
 	argMap, err := argumentParser(name, args...)
-	value, exist := storage.Singleton().Get(argMap[`key`])
+	value, exist := storage.GetCache().Get(argMap[`key`])
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
 		if err != nil{
@@ -118,7 +120,7 @@ func getProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 func removeProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`remove` command received","args:", args)
 	argMap, err := argumentParser(name, args...)
-	ok := storage.Singleton().Del(argMap[`key`])
+	ok := storage.GetCache().Del(argMap[`key`])
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
 		if err != nil{
@@ -141,26 +143,27 @@ func argumentParser (commandName string, args ...string) (map[string]string, err
 	cacheProvider := storage.GetCacheProviderType()
 	switch commandName {
 	case `set`:
-		if args[0] != `` && args[1] != `` {
+		if len(args) >= 2 {
 			argMap[`key`] = args[0]
 			argMap[`value`] = args[1]
 		} else {
-			err = errors.New("Absence of key and(or) value argument(s) in `set` opperation.")
+			err = errors.New("absence of key and(or) value argument(s) in `set` operation")
 		}
-		if cacheProvider == `agile` {
+		if cacheProvider == `agile` && len(args) >= 3{
 			if intTtl, intConversionErr := strconv.Atoi(args[2]); intConversionErr == nil && intTtl > 0 {
 				argMap[`ttl`] = args[2]
 				return argMap, err
 			}
-			err = errors.New("Your cache provider is `Agile`, ttl argument is obligatory. " +
-				"\n Provide int ttl greater then 0 as the 3rd argument.")
+			err = errors.New("please, provide int ttl greater then 0")
+		} else {
+			err = errors.New("your cache provider is `Agile`, ttl is obligatory as the 3rd argument")
 		}
 	case `get`, `remove`:
 		if args[0] != ``{
 			argMap[`key`] = args[0]
 			return argMap, err
 		}
-		err = errors.New("Absence of key argument in `get` or `remove` opperation.")
+		err = errors.New("absence of key argument in `get` or `remove` operation")
 	}
 	return argMap, err
 }

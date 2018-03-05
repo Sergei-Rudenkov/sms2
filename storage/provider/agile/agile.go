@@ -1,36 +1,11 @@
-package provider
+package agile
 
 import (
 	"time"
 	"sync"
 	"math/rand"
+	"sms2/storage/provider"
 )
-
-type Cache interface {
-	// Set a key with value to the cache. Returns true if an item was
-	// evicted.
-	Set(key, value interface{}) bool
-
-	// Get an item from the cache by key. Returns the value if it exists,
-	// and a bool stating whether or not it existed.
-	Get(key interface{}) (interface{}, bool)
-
-	// Keys returns a slice of all the keys in the cache
-	Keys() []interface{}
-
-	// Len returns the number of items present in the cache
-	Len() int
-
-	// Cap returns the total number of items the cache can retain
-	Cap() int
-
-	// Purge removes all items from the cache
-	Purge()
-
-	// Del deletes an item from the cache by key. Returns if an item was
-	// actually deleted.
-	Del(key interface{}) bool
-}
 
 type entry struct {
 	transactionID int64
@@ -39,11 +14,32 @@ type entry struct {
 }
 
 type agileCache struct {
-	cap     int
 	items   map[interface{}]*entry
 	lock    sync.RWMutex
-	NoReset bool
 }
+
+// New creates a new Cache with cap entries that expire after ttl has
+// elapsed since the item was added, modified or accessed.
+func New() provider.Cache {
+	c := agileCache{}
+
+	c.items = make(map[interface{}]*entry)
+
+	// no need to init the heap as there are no items yet
+	return &c
+}
+
+func (c *agileCache) Keys() []interface{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	keys := make([]interface{}, 0, len(c.items))
+	for k, _ := range c.items {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 
 func (c *agileCache) Set(key, value interface{}, ttl time.Duration) bool {
 	var updated bool
@@ -62,6 +58,8 @@ func (c *agileCache) Set(key, value interface{}, ttl time.Duration) bool {
 
 	go func() {
 		time.Sleep(ttl)
+		c.lock.Lock()
+		defer c.lock.Unlock()
 		e := c.getEntry(key)
 		if transactionID == e.transactionID {
 			// delete the item from the map
@@ -79,6 +77,36 @@ func (c *agileCache) Get(key interface{}) (interface{}, bool) {
 		return ent.value, true
 	}
 	return nil, false
+}
+
+func (c *agileCache) Len() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return len(c.items)
+}
+
+func (c *agileCache) Cap() int {
+	// There is no capacity limits for this type of Cache. Return MaxInt for consistency
+	const MaxInt = 2147483647 // max int32
+	return MaxInt
+}
+
+func (c *agileCache) Purge() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.items = make(map[interface{}]*entry)
+}
+
+func (c *agileCache) Del(key interface{}) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if ent, ok := c.items[key]; ok {
+		c.removeEntry(ent)
+		return true
+	}
+
+	return false
 }
 
 func (c *agileCache) getEntry (key interface{}) *entry {
