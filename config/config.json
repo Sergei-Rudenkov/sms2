@@ -1,0 +1,4 @@
+{
+  "HttpPort": ":8080",
+  "TelnetPort": ":5555"
+}

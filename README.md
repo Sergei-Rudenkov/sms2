@@ -11,6 +11,7 @@ SMS2 uses a number of open source libraries:
 
 ### Run
 There are two cache providers.
+
 **Fixed** - realisation based on fixed size priority heap, when overflows the item with least ttl overwrites. Items in heap sorted in ttl order.
 Running fixedCache provider.
 ```sh
@@ -46,7 +47,6 @@ For agile cache type we need ttl for each `set` command.
 ### Todos
 
  - Write unit Tests
- - Add http support
  - File backup functionality
  - Performance tests
 
