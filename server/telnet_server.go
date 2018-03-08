@@ -10,8 +10,9 @@ import (
 	"sms2/util"
 	"strconv"
 	"fmt"
-	"strings"
 	"time"
+	"sms2/service"
+	"strings"
 )
 
 func ServeTelnetConnection(port string) {
@@ -49,6 +50,22 @@ func ServeTelnetConnection(port string) {
 	commandProducer = telsh.ProducerFunc(removeProducer)
 	shellHandler.Register(commandName, commandProducer)
 
+	////////////////////////////////
+	//
+	// list support
+	//
+	////////////////////////////////
+
+	// Register the "lset" command.
+	commandName     = "lset"
+	commandProducer = telsh.ProducerFunc(lsetProducer)
+	shellHandler.Register(commandName, commandProducer)
+
+	// Register the "lget" command.
+	commandName     = "lget"
+	commandProducer = telsh.ProducerFunc(lgetProducer)
+	shellHandler.Register(commandName, commandProducer)
+
 	if err := telnet.ListenAndServe(port, shellHandler); nil != err {
 		panic(err)
 	}
@@ -57,21 +74,18 @@ func ServeTelnetConnection(port string) {
 
 func keysProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`keys` command received")
-	keys := storage.GetCache().Keys()
-	stringList := make([]string, len(keys))
-	for i := range keys {
-		stringList[i] = keys[i].(string)
-	}
+	listOfKeys := storage.GetCache().Keys()
+	keys := util.ListOfObjectsToConcatString(listOfKeys)
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
-		oi.LongWriteString(stdout, 	strings.Join(stringList,","))
+		oi.LongWriteString(stdout, 	keys)
 		return nil
 	})
 }
 
 func setProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`set` command received","args:", args)
-	argMap, err := util.TelnetArgumentParser(name, args...)
+	argMap, err := service.STelnetArgumentParser(name, args...)
 	tis, _ := strconv.Atoi(argMap[`ttl`]) // error should already have been checked in argumentParser function
 	evicted := storage.GetCache().Set(argMap[`key`], argMap[`value`],  time.Duration(tis)* time.Second)
 
@@ -98,7 +112,7 @@ func capacityProducer(ctx telnet.Context, name string, args ...string) telsh.Han
 
 func getProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`get` command received","args:", args)
-	argMap, err := util.TelnetArgumentParser(name, args...)
+	argMap, err := service.STelnetArgumentParser(name, args...)
 	value, exist := storage.GetCache().Get(argMap[`key`])
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
@@ -111,14 +125,19 @@ func getProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 			oi.LongWriteString(stdout,"Value for this key does not exist.")
 			return nil
 		}
-		oi.LongWriteString(stdout, value.(string))
+		switch value.(type) {
+		case string:
+			oi.LongWriteString(stdout, value.(string))
+		case []string:
+			oi.LongWriteString(stdout, strings.Join(value.([]string), `,`))
+		}
 		return nil
 	})
 }
 
 func removeProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
 	log.Info("`remove` command received","args:", args)
-	argMap, err := util.TelnetArgumentParser(name, args...)
+	argMap, err := service.STelnetArgumentParser(name, args...)
 	ok := storage.GetCache().Del(argMap[`key`])
 
 	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
@@ -131,6 +150,68 @@ func removeProducer(ctx telnet.Context, name string, args ...string) telsh.Handl
 			log.Debug("Value for this key does not exist. Nothing was removed.")
 		}
 		oi.LongWriteString(stdout, strconv.FormatBool(ok))
+		return nil
+	})
+}
+
+////////////////////////////////
+//
+// list support
+//
+////////////////////////////////
+
+func lsetProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
+	log.Info("`lset` command received","args:", args)
+	argMap, err := service.STelnetArgumentParser(name, args...)
+	tis, _ := strconv.Atoi(argMap[`ttl`]) // error should already have been checked in argumentParser function
+	listValue := util.StringToList(argMap[`value`]) // make list from string like [1,2,3]
+	evicted := storage.GetCache().Set(argMap[`key`], listValue,  time.Duration(tis)* time.Second)
+
+	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
+		if err != nil{
+			log.Debug(err.Error())
+			oi.LongWriteString(stderr, err.Error())
+			return nil
+		}
+		oi.LongWriteString(stdout, fmt.Sprintf("Evicted: %s", strconv.FormatBool(evicted)))
+		return nil
+	})
+}
+
+func lgetProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
+	log.Info("`lget` command received","args:", args)
+	argMap, err := service.LTelnetArgumentParser(name, args...)
+	if err != nil{
+		log.Error("error during lget argument parsing ", err.Error())
+	}
+	value, exist := storage.GetCache().Get(argMap[`key`])
+
+	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
+		var lreturn []string
+		if exist {
+			list := value.([]string)
+			if argMap[`first`] != `` && argMap[`last`] != ``{
+				first, _ := strconv.Atoi(argMap[`first`]) // error check skipped bc regexp already proved int
+				last, _ := strconv.Atoi(argMap[`last`]) // error check skipped bc regexp already proved int
+				lreturn = list[first:last]
+			}
+			if argMap[`first`] == `` && argMap[`last`] != `` {
+				last, _ := strconv.Atoi(argMap[`last`]) // error check skipped bc regexp already proved int
+				lreturn = list[:last]
+			}
+			if argMap[`last`] == `` && argMap[`first`] != `` {
+				first, _ := strconv.Atoi(argMap[`first`]) // error check skipped bc regexp already proved int
+				lreturn = list[first:]
+			}
+			oi.LongWriteString(stdout, strings.Join(lreturn, ","))
+			return nil
+		}
+		if err != nil{
+			log.Error("error during lget argument parsing ", err.Error())
+			oi.LongWriteString(stderr, err.Error())
+			return nil
+		}
+		oi.LongWriteString(stdout, strconv.FormatBool(exist))
 		return nil
 	})
 }

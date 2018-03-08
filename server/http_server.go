@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"fmt"
 	"sms2/storage"
-	"strings"
 	"sms2/util"
+	"sms2/service"
 )
 
 func ServeHttp(port string) {
@@ -15,7 +15,7 @@ func ServeHttp(port string) {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	operation, key, value, ttl, err := util.HttpRequestParamParser(r)
+	operation, key, value, ttl, err := service.SHttpRequestParamParser(r)
 	switch operation {
 	case "set":
 		if err != nil{
@@ -35,12 +35,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		ok := storage.GetCache().Del(key)
 		fmt.Fprintf(w, "%s", strconv.FormatBool(ok))
 	case "keys":
-		keys := storage.GetCache().Keys()
-		stringList := make([]string, len(keys))
-		for i := range keys {
-			stringList[i] = keys[i].(string)
-		}
-		fmt.Fprintf(w, "%s", strings.Join(stringList,","))
+		listOfKeys := storage.GetCache().Keys()
+		keys := util.ListOfObjectsToConcatString(listOfKeys)
+		fmt.Fprintf(w, "%s", keys)
 	case "capacity":
 		capacity := storage.GetCache().Cap()
 		fmt.Fprintf(w, "%d", capacity)
