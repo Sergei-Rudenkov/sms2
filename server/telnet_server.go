@@ -13,6 +13,7 @@ import (
 	"time"
 	"sms2/service"
 	"strings"
+	"errors"
 )
 
 func ServeTelnetConnection(port string) {
@@ -64,6 +65,11 @@ func ServeTelnetConnection(port string) {
 	// Register the "lget" command.
 	commandName     = "lget"
 	commandProducer = telsh.ProducerFunc(lgetProducer)
+	shellHandler.Register(commandName, commandProducer)
+
+	// Register the "ladd" command.
+	commandName     = "ladd"
+	commandProducer = telsh.ProducerFunc(laddProducer)
 	shellHandler.Register(commandName, commandProducer)
 
 	if err := telnet.ListenAndServe(port, shellHandler); nil != err {
@@ -212,6 +218,34 @@ func lgetProducer(ctx telnet.Context, name string, args ...string) telsh.Handler
 			return nil
 		}
 		oi.LongWriteString(stdout, strconv.FormatBool(exist))
+		return nil
+	})
+}
+
+func laddProducer(ctx telnet.Context, name string, args ...string) telsh.Handler{
+	var evicted bool
+	log.Info("`ladd` command received","args:", args)
+	argMap, err := service.LTelnetArgumentParser(name, args...)
+	value, exist := storage.GetCache().Get(argMap[`key`])
+	tis, _ := strconv.Atoi(argMap[`ttl`]) // error should already have been checked in argumentParser function
+	if exist {
+		switch value.(type){
+		case []string:
+			list := value.([]string)
+			list = append(list, argMap[`item`])
+			evicted = storage.GetCache().Set(argMap[`key`], list, time.Duration(tis)* time.Second)
+		default:
+			err = errors.New("value for passed key is not a list. Cannot accomplish ladd")
+		}
+	}
+
+	return telsh.PromoteHandlerFunc(func(stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser, args ...string) error {
+		if err != nil{
+			log.Debug(err.Error())
+			oi.LongWriteString(stderr, err.Error())
+			return nil
+		}
+		oi.LongWriteString(stdout, fmt.Sprintf("Evicted: %s", strconv.FormatBool(evicted)))
 		return nil
 	})
 }
