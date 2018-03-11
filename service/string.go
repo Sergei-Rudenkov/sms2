@@ -50,7 +50,7 @@ func STelnetArgumentParser(commandName string, args ...string) (map[string]strin
 			err = errors.New("please, provide int ttl greater then 0 as third argument")
 		}
 	case `get`, `remove`:
-		if args[0] != ``{
+		if len(args) > 0 && args[0] != ``{
 			argMap[`key`] = args[0]
 			return argMap, err
 		}

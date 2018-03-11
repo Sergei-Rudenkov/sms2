@@ -18,14 +18,11 @@ type agileCache struct {
 	lock    sync.RWMutex
 }
 
-// New creates a new Cache with cap entries that expire after ttl has
-// elapsed since the item was added, modified or accessed.
+// New creates a new Cache with cap entries
 func New() provider.Cache {
 	c := agileCache{}
 
 	c.items = make(map[interface{}]*entry)
-
-	// no need to init the heap as there are no items yet
 	return &c
 }
 
@@ -61,7 +58,7 @@ func (c *agileCache) Set(key, value interface{}, ttl time.Duration) bool {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 		e := c.getEntry(key)
-		if transactionID == e.transactionID {
+		if e != nil && transactionID == e.transactionID {
 			// delete the item from the map
 			c.removeEntry(e)
 		}
@@ -127,13 +124,13 @@ func (c *agileCache) insertEntry(key, value interface{}, tID int64) *entry {
 }
 
 func (c *agileCache) updateEntry(e *entry, value interface{}, tID int64) {
+	// must already have a write lock
 	e.value = value
 	e.transactionID = tID
 }
 
 func (c *agileCache) removeEntry(e *entry) {
 	// must already have a write lock
-
 	// delete the item from the map
 	delete(c.items, e.key)
 }
