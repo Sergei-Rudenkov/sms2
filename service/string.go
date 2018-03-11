@@ -14,7 +14,7 @@ func SHttpRequestParamParser(r *http.Request) (operation, key, value string, ttl
 	key = r.FormValue("key")
 	value = r.FormValue("value")
 	ttlString := r.FormValue("ttl")
-	if ttlString != `` && storage.GetCacheProviderType() == `agile` {
+	if storage.GetCacheProviderType() == `agile` {
 		tis, err := strconv.Atoi(ttlString)
 		if err != nil || tis < 0 {
 			log.Error("error to parse int from ttl argument", "err", err.Error())
@@ -22,8 +22,6 @@ func SHttpRequestParamParser(r *http.Request) (operation, key, value string, ttl
 			return operation, key, value, ttl, err
 		}
 		ttl = time.Duration(tis)* time.Second
-	}else {
-		err = errors.New("ttl should be provided as argument for set operation")
 	}
 	return operation, key, value, ttl, err
 }
