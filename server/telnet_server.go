@@ -16,6 +16,8 @@ import (
 	"errors"
 )
 
+// ServeTelnetConnection - start listening to telnet connections.
+// register commandProducers
 func ServeTelnetConnection(port string) {
 	shellHandler := telsh.NewShellHandler()
 	shellHandler.WelcomeMessage = `
@@ -248,4 +250,11 @@ func laddProducer(ctx telnet.Context, name string, args ...string) telsh.Handler
 		oi.LongWriteString(stdout, fmt.Sprintf("Evicted: %s", strconv.FormatBool(evicted)))
 		return nil
 	})
+
+	////////////////////////////////
+	//
+	// dictionary support
+	// (is not implemented yet)
+	//
+	////////////////////////////////
 }

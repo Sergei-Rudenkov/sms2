@@ -6,17 +6,24 @@ import (
 	log "github.com/inconshreveable/log15"
 	"strconv"
 	"io/ioutil"
+	"fmt"
 )
 
-//////////////////////////////////////////////////////////////
-//
-// Http client supports only operations with string values,
-// for list and dictionary support use telnet client
-//
-//////////////////////////////////////////////////////////////
+type HttpClient struct {
+	Host string
+	Port int
+}
 
-func HttpSet(key, value string, ttl int) {
-	_, err := http.PostForm("localhost:8080",
+type Connector interface{
+	HttpSet(key, value string, ttl int)
+	HttpGet(key string) string
+	HttpRemove(key string) bool
+}
+
+
+// HttpSet - ttl param is required only for agile cache type
+func (c *HttpClient) HttpSet(key, value string, ttl int) {
+	_, err := http.PostForm(fmt.Sprintf("http://%s:%d", c.Host, c.Port),
 		url.Values{
 			"operation": {"set"},
 			"key": {key},
@@ -28,20 +35,8 @@ func HttpSet(key, value string, ttl int) {
 	}
 }
 
-func HttpFixedSet(key, value string) {
-	_, err := http.PostForm("localhost:8080",
-		url.Values{
-			"operation": {"set"},
-			"key": {key},
-			"value": {value},
-		})
-	if err != nil{
-		log.Error(err.Error())
-	}
-}
-
-func HttpGet(key string) string  {
-	resp, err := http.PostForm("localhost:8080",
+func (c *HttpClient) HttpGet(key string) string  {
+	resp, err := http.PostForm(fmt.Sprintf("http://%s:%d", c.Host, c.Port),
 		url.Values{
 			"operation": {"get"},
 			"key": {key},
@@ -54,8 +49,8 @@ func HttpGet(key string) string  {
 	return string(body)
 }
 
-func HttpRemove(key string) bool{
-	resp, err := http.PostForm("localhost:8080",
+func (c *HttpClient)HttpRemove(key string) bool{
+	resp, err := http.PostForm(fmt.Sprintf("http://%s:%d", c.Host, c.Port),
 		url.Values{
 			"operation": {"remove"},
 			"key": {"f"},
@@ -74,4 +69,8 @@ func HttpRemove(key string) bool{
 	}
 	return succ
 }
+
+// TODO implement:
+// LSet, LAdd, LGet
+// DSet, DAdd, DRemove
 

@@ -7,6 +7,14 @@ import (
 	"sms2/storage/provider"
 )
 
+//////////////////////////////////
+//
+// Agile - realisation based on groutines.
+// Goroutine is starting right after Set operation is done and it's waiting until ttl time is over - then deleting the item.
+// For reference see: Set method.
+//
+//////////////////////////////////
+
 type entry struct {
 	transactionID int64
 	key           interface{}

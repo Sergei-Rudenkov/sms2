@@ -23,6 +23,7 @@ func GetCache() provider.Cache {
 	return singleton
 }
 
+// InitCache - init cache once as singleton
 func InitCache(t string, arg ...string)  {
 	once.Do(func() {
 		switch t {

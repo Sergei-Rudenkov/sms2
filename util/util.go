@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+// ListOfObjectsToConcatString - convert list []interface{} to concatenated
+// string like: "1,2,3"
 func ListOfObjectsToConcatString(list []interface{}) string{
 	stringList := make([]string, len(list))
 	for i := range list {
@@ -12,6 +14,7 @@ func ListOfObjectsToConcatString(list []interface{}) string{
 	return strings.Join(stringList,",")
 }
 
+// StringToList - parse string of type "[1,2,3]" to list
 func StringToList(str string) []string  {
 	//trim
 	str = strings.TrimSpace(str)

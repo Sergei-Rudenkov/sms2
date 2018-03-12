@@ -9,11 +9,14 @@ import (
 	"sms2/service"
 )
 
+// ServeHttp - start listening http
 func ServeHttp(port string) {
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(port, nil)
 }
 
+// handler - parse http post request by 'operation type'.
+// Supports only strings. For list and dictionary support - use telnet connection
 func handler(w http.ResponseWriter, r *http.Request) {
 	operation, key, value, ttl, err := service.SHttpRequestParamParser(r)
 	switch operation {

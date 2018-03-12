@@ -7,6 +7,14 @@ import (
 	"sms2/storage/provider"
 )
 
+///////////////////////////////
+//
+// Fixed - realisation based on fixed size priority heap,
+// when it overflows the item with least ttl overwrites.
+// Items in heap sorted in ttl order.
+//
+///////////////////////////////
+
 type entry struct {
 	key     interface{}
 	value   interface{}
