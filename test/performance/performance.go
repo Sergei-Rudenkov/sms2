@@ -27,7 +27,7 @@ func performanceHttpCacheTest(){
 		go func() {
 			wg1.Add(1)
 			defer wg1.Done()
-			c.HttpSet("key"+key, "value", 0)
+			c.HttpSet("key"+key, "value", 60)
 		}()
 	}
 	wg1.Wait()

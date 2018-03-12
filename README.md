@@ -42,7 +42,8 @@ $ ./sms2 agile
 
 For agile cache type we need ttl for each `set` command.
 
-
+Also you can use http Server and send post request with body:
+operation=set&key=first9&value=42&ttl=60
 
 ### Todos
 
