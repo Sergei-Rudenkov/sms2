@@ -2,17 +2,12 @@
 
 SMS2 - stands for simple in memory storage written in go.
 
-### Run
-There are two cache providers.
-
-**Fixed** - realisation based on fixed size priority heap, when overflows the item with least ttl overwrites. Items in heap sorted in ttl order.
+###### There are two cache providers:
+**Fixed** - realisation based on the fixed size priority heap, when heap overflows the item item with smallest ttl overwrites. 
 ```sh
-$ ./sms2 fixed 100 60
+$ ./sms2 fixed 100 60 #First argument is capacaty, the second is ttl(sec) 
 ```
-First argument is capacaty, second is ttl in seconds. 
-
-
-**Agile** -  realisation based on groutines that are starting right after `Set` operation is done and waiting until ttl time is over - then deleting the item.
+**Agile** -  ttl realisation based on goroutines that are starting right after `Set` operation and delete item when ttl is over. For reference see `agile.go:Set` 
 ```sh
 $ ./sms2 agile
 ```
@@ -28,6 +23,7 @@ $ ./sms2 agile
 | lset | listname [1,2,3,4,5] |
 | ladd | listname 6 |
 | lget | listname [3:5] |
+| lremove | listname [3:5] |
 
 #### agile cache type (per key ttl for all set operations):
 | Command | Arguments
@@ -35,7 +31,7 @@ $ ./sms2 agile
 | set | myname sergei 60 |
 
 
-Http server implemented as well. Send Post to `/` 
+Http server implemented as well. Send Post to `/` with body like: 
 `operation=set&key=first9&value=42&ttl=60`
 
 ### Tech
@@ -48,7 +44,7 @@ SMS2 uses a number of open source libraries:
 
 
 ### Implemented:
- - Two types of cache a)heap based. per heap ttl. b) goroutine based. per key ttl. You can choice cache type by passing arguments into main. 
+ - Two types of cache: a)heap based. per heap ttl. b) goroutine based. per key ttl. You can choice cache type by passing arguments into main. 
  - string, list support.
  - http, telnet servers.
  - simple performance test
