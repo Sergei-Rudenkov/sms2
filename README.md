@@ -3,7 +3,7 @@
 SMS2 - stands for simple in memory storage written in go.
 
 ###### There are two cache providers:
-**Fixed** - realisation based on the fixed size priority heap, when heap overflows the item item with smallest ttl overwrites. 
+**Fixed** - realisation based on the fixed size priority heap, when heap overflows the item with smallest ttl overwrites. 
 ```sh
 $ ./sms2 fixed 100 60 #First argument is capacaty, the second is ttl(sec) 
 ```
