@@ -13,6 +13,11 @@ $ ./sms2 agile
 ```
 
 ### Comand examples
+
+```sh
+$ telnet localhost 5555
+```
+
 | Command | Arguments
 | ------ | ------ |
 | set | myname sergei |
